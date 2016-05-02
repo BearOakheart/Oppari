@@ -1,6 +1,74 @@
 import httplib
 import json
+import urllib
+import urllib2
+import requests
+import json
+from pprint import pprint
+import time
+import datetime
+import os.path
 
+
+def loadBalance():
+    pushed = False
+    
+    #haetaan verkossa liikkuvat paketit yhden sekuntin intervallilla.
+    while True:
+        response = requests.get('http://192.168.2.102:8008/metric/ALL/ifinucastpkts/json')
+        data = response.json()
+        
+        
+        for i in data:
+            metric = i['metricValue']
+        print metric
+        
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        time.sleep(1)
+        
+        if metric >= 1000:
+            
+            if pushed == False:
+                pusher.set(flow1_1)
+                pusher.set(flow1_2)
+                pusher.set(flow1_3)
+                pusher.set(flow2_1)
+                pusher.set(flow2_2)
+                pusher.set(flow3_1)
+                pusher.set(flow3_2)
+                pusher.set(flow4_1)
+                pusher.set(flow4_2)
+                pusher.set(flow4_3)
+                print "Kuorman jako otettu kayttoon"
+                pushed = True
+                if os.path.isfile("rulelog.txt"):
+                    file = open("rulelog.txt","a")
+                    file.write(timestamp+" Flow rules PUSHED\n")
+                    file.close()
+                else:
+                    file = open("rulelog.txt","w")
+                    file.write(timestamp+" Flow rules PUSHED and file created\n")
+                    file.close()
+            if pushed == True and metric >=1000:
+                print "jako kaytossa"
+        if pushed == True and metric <=1000:
+            pusher.remove('application/json',flow1_1)
+            pusher.remove('application/json',flow1_2)
+            pusher.remove('application/json',flow1_3)
+            pusher.remove('application/json',flow2_1)
+            pusher.remove('application/json',flow2_2)
+            pusher.remove('application/json',flow3_1)
+            pusher.remove('application/json',flow3_2)
+            pusher.remove('application/json',flow4_1)
+            pusher.remove('application/json',flow4_2)
+            pusher.remove('application/json',flow4_3)
+            pushed = False
+            print "Kuormanjako poistettu"
+            file = open("rulelog.txt","a")
+            file.write(timestamp+" Flow rules DELETED\n")
+            file.close()
+def setValues():
+    pushed = False
 class StaticFlowPusher(object):
 
     def __init__(self, server):
@@ -147,13 +215,6 @@ flow2_2 = {
     "actions":"output=1"
     }
 
-pusher.set(flow1_1)
-pusher.set(flow1_2)
-pusher.set(flow1_3)
-pusher.set(flow2_1)
-pusher.set(flow2_2)
-pusher.set(flow3_1)
-pusher.set(flow3_2)
-pusher.set(flow4_1)
-pusher.set(flow4_2)
-pusher.set(flow4_3)
+loadBalance()
+    
+
